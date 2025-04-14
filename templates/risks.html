@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Riskler / Sorunlar</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        h2 {
+            color: #333;
+            text-align: center;
+            font-size: 26px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .risk-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .delete-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            table, th, td {
+                font-size: 12px;
+            }
+
+            .delete-btn {
+                padding: 5px 10px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>{{ user.username }} - Risk / Sorun Listesi</h2>
+        <table>
+            <tr>
+                <th>Proje</th>
+                <th>Açıklama</th>
+                <th>Kullanıcı</th>
+                <th>İşlemler</th>
+            </tr>
+            {% for risk in risks %}
+            <tr>
+                <td>{{ risk.project_name }}</td>
+                <td>{{ risk.description }}</td>
+                <td>{{ risk.owner.username }}</td>
+                <td class="risk-actions">
+                    <form action="/deleteRisk/{{ risk.id }}" method="post" style="display:inline;">
+                        <button type="submit" class="delete-btn">Sil</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <a href="/" class="back-link">← Ana Sayfa</a>
+    </div>
+</body>
+</html>

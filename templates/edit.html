@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><title>Edit Task</title></head>
+<body>
+  <h2>Edit Task</h2>
+   <form method="post">
+    <label for="project_name">Project Name:</label>
+    <input type="text" id="project_name" name="project_name" value="{{ task.project_name }}" required><br>
+
+    <label for="subject">Subject:</label>
+    <input type="text" id="subject" name="subject" value="{{ task.subject }}" required><br>
+
+    <label for="start_date">Start Date:</label>
+    <input type="date" id="start_date" name="start_date" value="{{ task.start_date }}" required><br>
+
+    <label for="completion_date">Completion Date:</label>
+    <input type="date" id="completion_date" name="completion_date" value="{{ task.completion_date }}" required><br>
+
+    <label for="status">Status:</label>
+    <select id="status" name="status" required>
+         {% for status in Status %}
+        <option value="{{ status }}" {% if status == task.status %}selected{% endif %}>{{ status }}</option>
+      {% endfor %}
+    </select><br>
+
+    <label for="description">Description:</label>
+    <textarea id="description" name="description" required>{{ task.description }}</textarea><br>
+
+     <button type="submit">Update</button>
+</form>
+  <a href="/">Back</a>
+</body>
+</html>

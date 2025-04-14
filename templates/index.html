@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task List</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        height: 100vh;
+      }
+
+      .container {
+        background-color: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 1000px;
+        margin-top: 40px;
+        position: relative;
+      }
+
+      h2,
+      h3 {
+        color: #333;
+        text-align: center;
+      }
+
+      h2 {
+        font-size: 26px;
+      }
+
+      h3 {
+        font-size: 22px;
+        margin-top: 30px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+      }
+
+      input[type="text"],
+      input[type="date"],
+      button {
+        padding: 8px 12px;
+        font-size: 14px;
+        border-radius: 4px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+      }
+
+      input[type="text"],
+      input[type="date"] {
+        border: 1px solid #ccc;
+        width: 150px;
+      }
+
+      button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        width: 180px;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      a {
+        color: #007bff;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      th,
+      td {
+        padding: 8px 12px;
+        text-align: center;
+        border: 1px solid #ddd;
+        font-size: 14px;
+      }
+
+      th {
+        background-color: #f4f4f4;
+      }
+
+      .planned {
+        color: blue;
+      }
+      .ongoing {
+        color: orange;
+      }
+      .completed {
+        color: green;
+      }
+      .canceled {
+        color: red;
+      }
+
+      .task-actions,
+      .risk-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .logout-button {
+        background-color: #f44336;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        cursor: pointer;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+      }
+
+      .logout-button:hover {
+        background-color: #e53935;
+      }
+
+      .filter-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .filter-container input,
+      .filter-container button {
+        width: 150px;
+      }
+
+      .clear-filter {
+        text-align: right;
+      }
+
+      .clear-filter a {
+        margin-left: 10px;
+        font-size: 14px;
+      }
+
+      .filter-buttons {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      table td .delete-btn {
+        padding: 5px 12px;
+        font-size: 12px;
+        width: auto;
+        max-width: 100px;
+        background-color: #f44336;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 20px;
+        }
+
+        .filter-container {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .filter-container input,
+        .filter-container button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <form action="/logout" method="get">
+        <button class="logout-button">Çıkış Yap</button>
+      </form>
+
+      <h2>{{ user.username }} Panel</h2>
+
+      {% if user.role == "user" %}
+      <div class="task-actions">
+        <a href="/add">Görev Ekle</a>
+        <a href="/add-risk">Risk/Sorun Ekle</a>
+        <a href="/risks">Riskler/Sorunlar</a>
+      </div>
+      {% endif %} {% if user.role == "admin" %}
+      <div class="task-actions">
+        <a href="/risks">Riskler/Sorunlar</a>
+      </div>
+      {% endif %} {% if user.role == "admin" %}
+      <h3>Sorgulama Paneli</h3>
+      <form method="get" action="/" class="filter-container">
+        <div>
+          Kullanıcı:
+          <input
+            type="text"
+            name="username"
+            value="{{ query.username or '' }}"
+          />
+          Proje:
+          <input
+            type="text"
+            name="project_name"
+            value="{{ query.project_name or '' }}"
+          />
+          Başlangıç Tarihi:
+          <input
+            type="date"
+            name="start_date"
+            value="{{ query.start_date or '' }}"
+          />
+          Bitiş Tarihi:
+          <input
+            type="date"
+            name="end_date"
+            value="{{ query.end_date or '' }}"
+          />
+        </div>
+        <div class="filter-buttons">
+          <button type="submit">Sorgula</button>
+          <a href="/" class="clear-filter">Temizle</a>
+        </div>
+      </form>
+      {% endif %}
+      <h3>Görev Listesi</h3>
+      <table id="taskTable">
+        <tr>
+          <th>Proje Adı</th>
+          <th>Konu</th>
+          <th>Durum</th>
+          <th>Başlama Tarihi</th>
+          <th>Tamamlanma Tarihi</th>
+          <th>Açıklama</th>
+          <th>Kullanıcı</th>
+          <th>İşlemler</th>
+        </tr>
+        {% for task in tasks %}
+        <tr>
+          <td>{{ task.project_name }}</td>
+          <td>{{ task.subject }}</td>
+          <td class="{{ task.status|lower }}">{{ task.status|capitalize }}</td>
+          <td>{{ task.start_date }}</td>
+          <td>{{ task.completion_date }}</td>
+          <td>{{ task.description }}</td>
+          <td>{{ task.owner.username }}</td>
+          <td class="task-actions">
+            <form
+              action="/delete/{{ task.id }}"
+              method="post"
+              style="display: inline"
+            >
+              <button type="submit" class="delete-btn">Sil</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      <script>
+        const table = document.getElementById("taskTable");
+
+        function sortTable(n) {
+          let rows,
+            switching,
+            i,
+            x,
+            y,
+            shouldSwitch,
+            dir,
+            switchCount = 0;
+          switching = true;
+          dir = "asc";
+
+          rows = table.rows;
+
+          while (switching) {
+            switching = false;
+            for (i = 1; i < rows.length - 1; i++) {
+              shouldSwitch = false;
+              x = rows[i].getElementsByTagName("TD")[n];
+              y = rows[i + 1].getElementsByTagName("TD")[n];
+
+              if (dir == "asc") {
+                if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                  shouldSwitch = true;
+                  break;
+                }
+              } else if (dir == "desc") {
+                if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                  shouldSwitch = true;
+                  break;
+                }
+              }
+            }
+            if (shouldSwitch) {
+              rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+              switching = true;
+              switchCount++;
+            } else {
+              if (switchCount == 0 && dir == "asc") {
+                dir = "desc";
+                switching = true;
+              }
+            }
+          }
+        }
+
+        const headers = table.getElementsByTagName("th");
+        for (let i = 0; i < headers.length - 1; i++) {
+          headers[i].addEventListener("click", function () {
+            sortTable(i);
+          });
+        }
+      </script>
+
+      {% if user.role == "admin" %}
+      <form action="/export" method="get">
+        <input
+          type="hidden"
+          name="username"
+          value="{{ query.username or '' }}"
+        />
+        <input
+          type="hidden"
+          name="project_name"
+          value="{{ query.project_name or '' }}"
+        />
+        <input
+          type="hidden"
+          name="start_date"
+          value="{{ query.start_date or '' }}"
+        />
+        <input
+          type="hidden"
+          name="end_date"
+          value="{{ query.end_date or '' }}"
+        />
+        <button type="submit">Dışa Aktar</button>
+      </form>
+      {% endif %}
+    </div>
+  </body>
+</html>
