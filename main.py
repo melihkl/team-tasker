@@ -348,36 +348,45 @@ async def delete_task(task_id: int, current_user: User = Depends(get_current_act
     db.commit()
     return RedirectResponse(url="/", status_code=302)
 
-
-@app.get("/edit/{task_id}", response_class=HTMLResponse)
-async def edit_form(task_id: int, request: Request, current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id, Task.owner_id == current_user.id).first()
+@app.get("/edit/{task_id}")
+def edit_task(task_id: int, request: Request, db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
-        raise HTTPException(status_code=404, detail="Task not found or not authorized")
-    return templates.TemplateResponse("edit.html", {"request": request, "task": task, "Status": Status})
+        raise HTTPException(status_code=404, detail="Task not found")
+    return templates.TemplateResponse("edit.html", {"request": request, "task": task})
 
 
 @app.post("/edit/{task_id}")
-async def edit_task(task_id: int,
-                    project_name: str = Form(...),
-                    subject: str = Form(...),
-                    start_date: str = Form(...),
-                    completion_date: str = Form(...),
-                    status: Status = Form(...),
-                    description: str = Form(...),
-                    current_user: User = Depends(get_current_active_user),
-                    db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id, Task.owner_id == current_user.id).first()
+async def edit_task(
+    request: Request,
+    task_id: int,
+    project_name: str = Form(...),
+    subject: str = Form(...),
+    start_date: str = Form(...),
+    completion_date: str = Form(...),
+    status: Status = Form(...),
+    description: str = Form(...),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+
+    task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
-        raise HTTPException(status_code=404, detail="Task not found or not authorized")
-    task.project_name = project_name
-    task.subject = subject
-    task.start_date = datetime.strptime(start_date, "%Y-%m-%d")
-    task.completion_date = datetime.strptime(completion_date, "%Y-%m-%d")
-    task.status = status
-    task.description = description
-    db.commit()
-    return RedirectResponse(url="/", status_code=302)
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if current_user.role == Role.user and task.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    if current_user.role == Role.user:
+        task.project_name = project_name
+        task.subject = subject
+        task.start_date = datetime.strptime(start_date, "%Y-%m-%d")
+        task.completion_date = datetime.strptime(completion_date, "%Y-%m-%d")
+        task.status = status
+        task.description = description
+
+        db.commit()
+        return RedirectResponse(url="/", status_code=302)
+    raise HTTPException(status_code=403, detail="Admin does not have permission to add tasks")
 
 
 @app.get('/logout', response_class=HTMLResponse)
