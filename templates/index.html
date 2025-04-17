@@ -173,6 +173,48 @@
         background-color: #f44336;
       }
 
+      .edit-btn {
+        padding: 5px 12px;
+        font-size: 12px;
+        width: auto;
+        max-width: 100px;
+        background-color: #2196f3;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      .edit-btn:hover {
+        background-color: #1976d2;
+      }
+
+      #pagination button {
+        padding: 4px 8px;
+        margin: 0 2px;
+        border: none;
+        background-color: #ddd;
+        color: #333;
+        border-radius: 4px;
+        cursor: pointer;
+        /* min-width kaldırıldı */
+        width: auto;
+      }
+
+      #pagination button:hover {
+        background-color: #ccc;
+      }
+
+      #pagination .active-page {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      .sort-icon {
+        font-size: 0.8em;
+        color: #aaa;
+        margin-left: 5px;
+      }
+
       @media (max-width: 768px) {
         .container {
           padding: 20px;
@@ -245,93 +287,154 @@
       {% endif %}
       <h3>Görev Listesi</h3>
       <table id="taskTable">
-        <tr>
-          <th>Proje Adı</th>
-          <th>Konu</th>
-          <th>Durum</th>
-          <th>Başlama Tarihi</th>
-          <th>Tamamlanma Tarihi</th>
-          <th>Açıklama</th>
-          <th>Kullanıcı</th>
-          <th>İşlemler</th>
-        </tr>
-        {% for task in tasks %}
-        <tr>
-          <td>{{ task.project_name }}</td>
-          <td>{{ task.subject }}</td>
-          <td class="{{ task.status|lower }}">{{ task.status|capitalize }}</td>
-          <td>{{ task.start_date }}</td>
-          <td>{{ task.completion_date }}</td>
-          <td>{{ task.description }}</td>
-          <td>{{ task.owner.username }}</td>
-          <td class="task-actions">
-            <form
-              action="/delete/{{ task.id }}"
-              method="post"
-              style="display: inline"
-            >
-              <button type="submit" class="delete-btn">Sil</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </table>
+        <thead>
+          <tr>
+            <th>Proje Adı <span class="sort-icon">▲▼</span></th>
+            <th>Konu <span class="sort-icon">▲▼</span></th>
+            <th>Durum <span class="sort-icon">▲▼</span></th>
+            <th>Başlama Tarihi <span class="sort-icon">▲▼</span></th>
+            <th>Tamamlanma Tarihi <span class="sort-icon">▲▼</span></th>
+            <th>Açıklama <span class="sort-icon">▲▼</span></th>
+            <th>Kullanıcı <span class="sort-icon">▲▼</span></th>
+            <th>İşlemler</th>
+          </tr>
+        </thead>
 
+        <tbody>
+          {% for task in tasks %}
+          <tr class="task-row">
+            <td>{{ task.project_name }}</td>
+            <td>{{ task.subject }}</td>
+            <td class="{{ task.status|lower }}">
+              {{ task.status|capitalize }}
+            </td>
+            <td>{{ task.start_date }}</td>
+            <td>{{ task.completion_date }}</td>
+            <td>{{ task.description }}</td>
+            <td>{{ task.owner.username }}</td>
+            <td class="task-actions">
+              <form
+                action="/delete/{{ task.id }}"
+                method="post"
+                style="display: inline"
+              >
+                <button type="submit" class="delete-btn">Sil</button>
+              </form>
+              <form
+                action="/edit/{{ task.id }}"
+                method="get"
+                style="display: inline"
+              >
+                <button type="submit" class="edit-btn">Düzenle</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div id="pagination" style="text-align: center; margin-top: 20px"></div>
       <script>
         const table = document.getElementById("taskTable");
+        const headers = table.querySelectorAll("thead th");
+        const tbody = table.querySelector("tbody");
 
-        function sortTable(n) {
-          let rows,
-            switching,
-            i,
-            x,
-            y,
-            shouldSwitch,
-            dir,
-            switchCount = 0;
-          switching = true;
-          dir = "asc";
+        let allRows = Array.from(tbody.querySelectorAll(".task-row"));
+        let currentPage = 1;
+        const rowsPerPage = 10;
+        let currentSortColumn = null;
+        let currentSortDirection = "asc";
 
-          rows = table.rows;
-
-          while (switching) {
-            switching = false;
-            for (i = 1; i < rows.length - 1; i++) {
-              shouldSwitch = false;
-              x = rows[i].getElementsByTagName("TD")[n];
-              y = rows[i + 1].getElementsByTagName("TD")[n];
-
-              if (dir == "asc") {
-                if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-                  shouldSwitch = true;
-                  break;
-                }
-              } else if (dir == "desc") {
-                if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
-                  shouldSwitch = true;
-                  break;
-                }
+        // Sıralama başlıklarına tıklama olayı
+        headers.forEach((th, index) => {
+          if (index < headers.length - 1) {
+            th.addEventListener("click", () => {
+              if (currentSortColumn === index) {
+                currentSortDirection =
+                  currentSortDirection === "asc" ? "desc" : "asc";
+              } else {
+                currentSortColumn = index;
+                currentSortDirection = "asc";
               }
-            }
-            if (shouldSwitch) {
-              rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-              switching = true;
-              switchCount++;
-            } else {
-              if (switchCount == 0 && dir == "asc") {
-                dir = "desc";
-                switching = true;
-              }
-            }
+              sortRows(currentSortColumn, currentSortDirection);
+              showPage(1);
+            });
           }
-        }
+        });
 
-        const headers = table.getElementsByTagName("th");
-        for (let i = 0; i < headers.length - 1; i++) {
-          headers[i].addEventListener("click", function () {
-            sortTable(i);
+        function sortRows(columnIndex, direction) {
+          // Bu indeksler tarih olan sütunlara ait: Başlama Tarihi (3), Tamamlanma Tarihi (4)
+          const isDateColumn = columnIndex === 3 || columnIndex === 4;
+
+          allRows.sort((a, b) => {
+            let cellA = a.children[columnIndex].textContent.trim();
+            let cellB = b.children[columnIndex].textContent.trim();
+
+            if (isDateColumn) {
+              const dateA = new Date(cellA);
+              const dateB = new Date(cellB);
+
+              return direction === "asc" ? dateA - dateB : dateB - dateA;
+            } else {
+              cellA = cellA.toLowerCase();
+              cellB = cellB.toLowerCase();
+
+              const numA = parseFloat(cellA);
+              const numB = parseFloat(cellB);
+
+              if (!isNaN(numA) && !isNaN(numB)) {
+                return direction === "asc" ? numA - numB : numB - numA;
+              } else {
+                return direction === "asc"
+                  ? cellA.localeCompare(cellB)
+                  : cellB.localeCompare(cellA);
+              }
+            }
           });
         }
+
+        function showPage(page) {
+          currentPage = page;
+          tbody.innerHTML = ""; // sadece tbody temizleniyor, başlık etkilenmez
+
+          const start = (page - 1) * rowsPerPage;
+          const end = start + rowsPerPage;
+          const pageRows = allRows.slice(start, end);
+
+          pageRows.forEach((row) => tbody.appendChild(row));
+          renderPagination();
+        }
+
+        function renderPagination() {
+          const paginationContainer = document.getElementById("pagination");
+          paginationContainer.innerHTML = "";
+
+          const totalPages = Math.ceil(allRows.length / rowsPerPage);
+
+          const createButton = (text, pageNumber, disabled = false) => {
+            const btn = document.createElement("button");
+            btn.innerText = text;
+            btn.disabled = disabled;
+            btn.onclick = () => showPage(pageNumber);
+            paginationContainer.appendChild(btn);
+          };
+
+          createButton("⏮", 1, currentPage === 1);
+          createButton("◀", currentPage - 1, currentPage === 1);
+
+          for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement("button");
+            btn.innerText = i;
+            if (i === currentPage) btn.classList.add("active-page");
+            btn.onclick = () => showPage(i);
+            paginationContainer.appendChild(btn);
+          }
+
+          createButton("▶", currentPage + 1, currentPage === totalPages);
+          createButton("⏭", totalPages, currentPage === totalPages);
+        }
+
+        // İlk yüklemede göster
+        showPage(currentPage);
       </script>
 
       {% if user.role == "admin" %}
